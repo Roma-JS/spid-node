@@ -4,6 +4,10 @@ Utility lib for authentication with SPID.
 
 [![Build Status](https://travis-ci.org/Roma-JS/spid-node.png?branch=master)](https://travis-ci.org/Roma-JS/spid-node)
 
+## CAUTION
+This package is broken. We're investigating around Authn request problem of validation.
+
+
 ![Diagram](/assets/diagram.png)
 
 
