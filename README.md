@@ -2,6 +2,7 @@
 
 Utility lib for authentication with SPID.
 
+[![Build Status](https://travis-ci.org/Roma-JS/spid-node.png?branch=master)](https://travis-ci.org/Roma-JS/spid-node)
 
 ![Diagram](/assets/diagram.png)
 
