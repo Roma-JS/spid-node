@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<md:EntityDescriptor 
+    xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" 
+    xmlns:ds="http://www.w3.org/2000/09/xmldsig#" entityID="https://localhost:3000/metadata" ID="_78bdeec-b4fc-445a-969d-1102b5e61115">
+    <md:SPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol" AuthnRequestsSigned="true" WantAssertionsSigned="true">
+        <md:KeyDescriptor use="signing">
+            <ds:KeyInfo 
+                xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+                <ds:X509Data>
+                    <ds:X509Certificate>MIIDSTCCAjCgAwIBAgIBADANBgkqhkiG9w0BAQ0FADA+MQswCQYDVQQGEwJpdDEN MAsGA1UECAwEUm9tZTEPMA0GA1UECgwGUm9tYUpTMQ8wDQYDVQQDDAZSb21hanMw HhcNMTcxMDA3MjM0MzI0WhcNMTgxMDA3MjM0MzI0WjA+MQswCQYDVQQGEwJpdDEN MAsGA1UECAwEUm9tZTEPMA0GA1UECgwGUm9tYUpTMQ8wDQYDVQQDDAZSb21hanMw ggEjMA0GCSqGSIb3DQEBAQUAA4IBEAAwggELAoIBAgCy9Oc8LRIqwSweUUN4Fm/K 6EZMXH08E7wjyi0JYWFeET3Ar5+jpospGFcSkOD1yZ69dGKiS0x9dQpW5PNgbStt aA8I9jP4dPXqBZTQ4A5+Dxs4HU4/mPa7K44M8j9XQrpEw/GoEQWwxnzI437IAKef 6n5kWZMaqpR2KLbD1cOfIbcGw9SuzNYq6zETTqN/7ysCQvI/WabkidW/ZLgkxVCX Cildw5kDwzzsK+0NV5nwyPY0Qfy5+R2dK+gL+b/rbuWas4zp1RCYxrgSNX4ffAJM PAYnD/iUOlvcwGU/M2byC3B3J+SJf++fRiMUAMqz9VtguQhbTN4YBVSf68ml+5st SwIDAQABo1AwTjAdBgNVHQ4EFgQUx7PbAl3yW8GOttXnL2Ll+SvtvskwHwYDVR0j BBgwFoAUx7PbAl3yW8GOttXnL2Ll+SvtvskwDAYDVR0TBAUwAwEB/zANBgkqhkiG 9w0BAQ0FAAOCAQIASZjjIhNIZ8YsiuTDok1cywrFKpZe+yS0GjFGIyPx5lYr5arX OCacAJTxZ77AFH71Ma1esdNkhayy6wNFczEX1GTFQfRxqa5fWYhMSWj+PqrAzcBH cF99DEicq60fun8mYDnlPl8BAU7EhgRPxF2lQ7Rt9WTJG02bWO16HPYhDrbcO4YT 47/A5xX6vb7Im8sGEdqLw1KgJ5YMBaY6pTTiNt+8TPQJ6NOq3ZoIrXdQ2fLeUGNo nqk8aCu/cZPItZdvZPF9E7aXpYKfL4HGi8JAdpmOm+pxraMourDEZgrcfS3yIAkO gzD+oGkuCxAIk7Vo3EjLO9BhFTCOdUS7k3YGTks=</ds:X509Certificate>
+                </ds:X509Data>
+            </ds:KeyInfo>
+        </md:KeyDescriptor>
+        <md:KeyDescriptor use="encryption">
+            <ds:KeyInfo 
+                xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+                <ds:X509Data>
+                    <ds:X509Certificate>MIIDSTCCAjCgAwIBAgIBADANBgkqhkiG9w0BAQ0FADA+MQswCQYDVQQGEwJpdDEN MAsGA1UECAwEUm9tZTEPMA0GA1UECgwGUm9tYUpTMQ8wDQYDVQQDDAZSb21hanMw HhcNMTcxMDA3MjM0MzI0WhcNMTgxMDA3MjM0MzI0WjA+MQswCQYDVQQGEwJpdDEN MAsGA1UECAwEUm9tZTEPMA0GA1UECgwGUm9tYUpTMQ8wDQYDVQQDDAZSb21hanMw ggEjMA0GCSqGSIb3DQEBAQUAA4IBEAAwggELAoIBAgCy9Oc8LRIqwSweUUN4Fm/K 6EZMXH08E7wjyi0JYWFeET3Ar5+jpospGFcSkOD1yZ69dGKiS0x9dQpW5PNgbStt aA8I9jP4dPXqBZTQ4A5+Dxs4HU4/mPa7K44M8j9XQrpEw/GoEQWwxnzI437IAKef 6n5kWZMaqpR2KLbD1cOfIbcGw9SuzNYq6zETTqN/7ysCQvI/WabkidW/ZLgkxVCX Cildw5kDwzzsK+0NV5nwyPY0Qfy5+R2dK+gL+b/rbuWas4zp1RCYxrgSNX4ffAJM PAYnD/iUOlvcwGU/M2byC3B3J+SJf++fRiMUAMqz9VtguQhbTN4YBVSf68ml+5st SwIDAQABo1AwTjAdBgNVHQ4EFgQUx7PbAl3yW8GOttXnL2Ll+SvtvskwHwYDVR0j BBgwFoAUx7PbAl3yW8GOttXnL2Ll+SvtvskwDAYDVR0TBAUwAwEB/zANBgkqhkiG 9w0BAQ0FAAOCAQIASZjjIhNIZ8YsiuTDok1cywrFKpZe+yS0GjFGIyPx5lYr5arX OCacAJTxZ77AFH71Ma1esdNkhayy6wNFczEX1GTFQfRxqa5fWYhMSWj+PqrAzcBH cF99DEicq60fun8mYDnlPl8BAU7EhgRPxF2lQ7Rt9WTJG02bWO16HPYhDrbcO4YT 47/A5xX6vb7Im8sGEdqLw1KgJ5YMBaY6pTTiNt+8TPQJ6NOq3ZoIrXdQ2fLeUGNo nqk8aCu/cZPItZdvZPF9E7aXpYKfL4HGi8JAdpmOm+pxraMourDEZgrcfS3yIAkO gzD+oGkuCxAIk7Vo3EjLO9BhFTCOdUS7k3YGTks=</ds:X509Certificate>
+                </ds:X509Data>
+            </ds:KeyInfo>
+        </md:KeyDescriptor>
+        <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://localhost:3000/logout" />
+        <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</md:NameIDFormat>
+        <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://localhost:3000/done" index="0" isDefault="true" />
+        <md:AttributeConsumingService index="1">
+            <md:ServiceName xml:lang="it">RomaJS</md:ServiceName>
+            <md:ServiceDescription xml:lang="it"></md:ServiceDescription>
+            <md:RequestedAttribute Name="name" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"/>
+            <md:RequestedAttribute Name="spidCode" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"/>
+            <md:RequestedAttribute Name="dateOfBirth" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"/>
+            <md:RequestedAttribute Name="familyName" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:basic"/>
+        </md:AttributeConsumingService>
+    </md:SPSSODescriptor>
+</md:EntityDescriptor>
