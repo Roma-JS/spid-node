@@ -7,7 +7,7 @@ const providers = new Map();
 
 providersData.forEach(provider => {
     const metadata = fs.readFileSync(
-        path.resolve(__dirname, '..', 'metadata', `${provider.id}.xml`),
+        path.resolve(__dirname, '..', 'metadata', `${provider.id}.xml`)
     );
 
     addIdentityProvider(provider.id, {metadata});
