@@ -17,20 +17,20 @@ function loginRequest(idpKey, type = 'post') {
     const idp = providers.get(idpKey);
 
     if (!idp) {
-        throw new Error(`Missing Identity Provider with key: ${idp}`);
+        throw new Error(`Missing Identity Provider with key: ${idpKey}`);
     }
 
     return sp.createLoginRequest(idp, type);
 }
 
-async function parseResponse(req, idpKey, type = 'post') {
+function parseResponse(req, idpKey, type = 'post') {
     const idp = providers.get(idpKey);
 
     if (!idp) {
-        throw new Error(`Missing Identity Provider with key: ${idp}`);
+        return Promise.reject(`Missing Identity Provider with key: ${idpKey}`);
     }
 
-    return await sp.parseLoginResponse(idp, type, req);
+    return sp.parseLoginResponse(idp, type, req);
 }
 
 module.exports = {

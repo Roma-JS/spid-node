@@ -3,50 +3,127 @@ const path = require('path');
 const {expect} = require('chai');
 const SPID = require('../index');
 
+// spid-test is a (fake) identity provider that accepts only post and redirect requests
+const SAMLResponseBody = require('./assets/saml-response');
+
+function createResponse(body) {
+    return {
+        query: {},
+        body,
+        octectString: '',
+    };
+}
+
 describe('SPID', function() {
-    it('should have init function with Service Providers parameters as input', function() {
-        SPID.init(
-            path.resolve(__dirname, 'assets/private-key'),
-            path.resolve(__dirname, 'assets/metadata-sp.xml')
-        );
-    });
-    it('should allow to add new Identity Provider', function() {
+    beforeEach(
+        'should have init function with Service Providers parameters as input',
+        () => {
+            SPID.init(
+                path.resolve(__dirname, 'assets/private-key'),
+                path.resolve(__dirname, 'assets/metadata-sp.xml')
+            );
+        }
+    );
+
+    beforeEach('should allow to add new Identity Provider', () => {
         SPID.addIdentityProvider('spid-test', {
             metadata: fs.readFileSync(
                 path.resolve(__dirname, 'assets/metadata-idp.xml')
             ),
         });
     });
-    it('should create a request login with HTTP-POST', function() {
-        const data = SPID.loginRequest('spid-test', 'post');
 
-        expect(data).to.exist;
-        expect(data.id).to.exist;
-        expect(data.context).to.exist;
-        expect(data.relayState).to.exist;
-        expect(data.type).to.exist;
-    });
-    it('should create a request login with HTTP-Redirect', function() {
-        const data = SPID.loginRequest('spid-test', 'redirect');
+    describe('Request', () => {
+        it('should create a request login with HTTP-POST', function() {
+            const data = SPID.loginRequest('spid-test', 'post');
 
-        expect(data).to.exist;
-        expect(data.id).to.exist;
-        expect(data.context).to.exist;
-        expect(data.context).to.have.string(
-            'https://idp.spid.gov.it:9443/samlsso?'
-        );
+            expect(data).to.exist;
+            expect(data.id).to.exist;
+            expect(data.context).to.exist;
+            expect(data.relayState).to.exist;
+            expect(data.type).to.exist;
+        });
+        it('should create a request login with HTTP-Redirect', function() {
+            const data = SPID.loginRequest('spid-test', 'redirect');
+
+            expect(data).to.exist;
+            expect(data.id).to.exist;
+            expect(data.context).to.exist;
+            expect(data.context).to.have.string(
+                'https://idp.spid.gov.it:9443/samlsso?'
+            );
+        });
+
+        it('should reject a request login with HTTP-SOAP', function() {
+            expect(() => SPID.loginRequest('spid-test', 'soap')).to.throw(
+                'The binding is not support'
+            );
+        });
+
+        it('should reject a request with an unknown provider', function() {
+            expect(() => SPID.loginRequest('random-spid', 'soap')).to.throw(
+                'Missing Identity Provider with key: random-spid'
+            );
+        });
     });
-    it('should parse login response', async function() {
-        const req = {
-            query: {},
-            body: {
-                SAMLResponse:
-                    'PHNhbWxwOlJlc3BvbnNlIHhtbG5zOnNhbWxwPSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6cHJvdG9jb2wiIHhtbG5zOnNhbWw9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDphc3NlcnRpb24iIElEPSJfNzY2ZjkzZjljNWFjNzIzYjY5Y2Q4Nzc3YzJjNDUzMWMxNzE1MDg2YTc2IiBWZXJzaW9uPSIyLjAiIElzc3VlSW5zdGFudD0iMjAxNy0xMC0wN1QyMTo0ODowMFoiIERlc3RpbmF0aW9uPSJodHRwczovL3Nzby4xOGFwcC5pdGFsaWEuaXQvc3AvQXNzZXJ0aW9uQ29uc3VtZXJTZXJ2aWNlIiBJblJlc3BvbnNlVG89IklEYTU2MjYxNGItMzFiMS00YjNmLTk1ZWEtMjMwODM2MmM4YzZmIj48c2FtbDpJc3N1ZXIgRm9ybWF0PSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6bmFtZWlkLWZvcm1hdDplbnRpdHkiPmlkZW50aXR5LnNpZWx0ZWNsb3VkLml0PC9zYW1sOklzc3Vlcj48ZHM6U2lnbmF0dXJlIHhtbG5zOmRzPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwLzA5L3htbGRzaWcjIj4KICA8ZHM6U2lnbmVkSW5mbz48ZHM6Q2Fub25pY2FsaXphdGlvbk1ldGhvZCBBbGdvcml0aG09Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvMTAveG1sLWV4Yy1jMTRuIyIvPgogICAgPGRzOlNpZ25hdHVyZU1ldGhvZCBBbGdvcml0aG09Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvMDQveG1sZHNpZy1tb3JlI3JzYS1zaGEyNTYiLz4KICA8ZHM6UmVmZXJlbmNlIFVSST0iI183NjZmOTNmOWM1YWM3MjNiNjljZDg3NzdjMmM0NTMxYzE3MTUwODZhNzYiPjxkczpUcmFuc2Zvcm1zPjxkczpUcmFuc2Zvcm0gQWxnb3JpdGhtPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwLzA5L3htbGRzaWcjZW52ZWxvcGVkLXNpZ25hdHVyZSIvPjxkczpUcmFuc2Zvcm0gQWxnb3JpdGhtPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzEwL3htbC1leGMtYzE0biMiLz48L2RzOlRyYW5zZm9ybXM+PGRzOkRpZ2VzdE1ldGhvZCBBbGdvcml0aG09Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvMDQveG1sZW5jI3NoYTI1NiIvPjxkczpEaWdlc3RWYWx1ZT4zcm1xMlZWVjdkaVdNTVZQU2xPWG1vM09naHVqbnpMVjExcnVpVHc3N0JNPTwvZHM6RGlnZXN0VmFsdWU+PC9kczpSZWZlcmVuY2U+PC9kczpTaWduZWRJbmZvPjxkczpTaWduYXR1cmVWYWx1ZT5KUFgrVFhwcnFuK0pVS3pvUWRaSFNtUGdST0RyV0F0UHZGZzFsZUJxZUtKTDc0MHBBVHNkUk96L0ZJdDRUWFBWRmJLWWlsYUFwdkhBb3QyUDBJSG9uSkZsZTd3Y0V0RXJuQ2l1azBUN0JUOTRCK1dtSngvN0FvZVR6WGNxQVJJRUdJWW05dDM3Q0xmd08wdlBOVTVpRjZnNERRR0pKczl0clpjMUtkbmJySGczRSt0am5FRDRoTVJrQkRzbTZzUlI1em1BRHJuckJlZEhsZnpCbmZGVjlFaU53Z2NMQjFWUldJM1ZVNXdSaTQvWjRKV2FaVUZ6RzMxMzNDVWtNL2I0ckJJeldwZFZ0ZkppdVg0Ti9aeUt6aC8wTmt3cWx3MmlSN0J1ZndLVlEvbUhqbFBvK3J3WHVXMi9PY01tbUd5TDRub2IyZTQwSVpaTXZXSjhuSHFXV3c9PTwvZHM6U2lnbmF0dXJlVmFsdWU+CjxkczpLZXlJbmZvPjxkczpYNTA5RGF0YT48ZHM6WDUwOUNlcnRpZmljYXRlPk1JSURjekNDQWx1Z0F3SUJBZ0lKQU1zWDBpRUtRTTZ4TUEwR0NTcUdTSWIzRFFFQkN3VUFNRkF4Q3pBSkJnTlZCQVlUQWtsVU1RNHdEQVlEVlFRSURBVkpkR0ZzZVRFZ01CNEdBMVVFQnd3WFUyRnVJRWR5WldkdmNtbHZJR1JwSUVOaGRHRnVhV0V4RHpBTkJnTlZCQW9NQmxOcFpXeDBaVEFlRncweE5URXlNVFF3T0RFME1UVmFGdzB5TlRFeU1UTXdPREUwTVRWYU1GQXhDekFKQmdOVkJBWVRBa2xVTVE0d0RBWURWUVFJREFWSmRHRnNlVEVnTUI0R0ExVUVCd3dYVTJGdUlFZHlaV2R2Y21sdklHUnBJRU5oZEdGdWFXRXhEekFOQmdOVkJBb01CbE5wWld4MFpUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCQU5JUmxPak0vdFM5VjlqWWpKcmVxWlNjdHVZcmlMZlBURGdYMlhkaFdFYk1wTXB3QTlwMGJzYkxRb0MxZ1AwcGlMTytxYkNzSWg5K2JvUGZiNC9kTElBN0UrVm1tNS8rZXZPdHp2amZIRzRvWGpaSzZqbzA4UXdrVlY4Qm0xamtha0pQVlo1N1FGYnlEU3IrdUJiSU1ZN0NqQTJMZGduSUl3S04va1NmRmhyWlVNSjZaeHdlZ00xMDBYNXBzZk5QU1Y5V1V0Z0hzdnFsSWx2eWRQbzJyTW0yMXNnKzJkM1Z0ZzhEdGhOU1lSTHFnYXpDYzBOVHNpZ3JIN25pU2JKQ08wbnEvc3ZNWDJyU0ZkaDVHRks3L3B4VCtjM09GV3FJUjhyK1JYNHFXK2F1SnFrYlR1TlJ3eFYyMlNtNnI2OVpKd1YwV3NwdnNWSmkrRllxaXlvV2hnVUNBd0VBQWFOUU1FNHdIUVlEVlIwT0JCWUVGQ1V4MDYzR3dVaEVGRGxsd0NCZS8ramRlVytYTUI4R0ExVWRJd1FZTUJhQUZDVXgwNjNHd1VoRUZEbGx3Q0JlLytqZGVXK1hNQXdHQTFVZEV3UUZNQU1CQWY4d0RRWUpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFERjk0YzNKd3lCTTg2UUJMZW9VWnhSWUtQbmliYThCMzlGZkprMHBiK0xlaktmWk12c3BPck9GZ1lRUTlVclM4SUZrQlg5WHI3L3RqUmJyMmNQd1pOanJFWmhvcStOZmNFMDlibmFXVHlFbDFJRUtLOFRXT3VwSmo5VU5WcFlYWDBMZklSck13TkV6QVBReWtPYXFQT255SHhPQ1BUWTk1N3hYU28zalhPeXZ1Z3R2UEhiZCtpbGlBelVvUG0xdGdpVEtXUytFa1EvZTIyZUZ2NU5FeVQrb0hpS292clErdm9QV09JdkpWTWppVHl4UmljOGZFbkk5enpWMFN4V3ZGdnR5Nzd3Z2NZYmVFdUZaYTNpaWRob2pVZ2U4bzF1WS9KVXlRakZ4Y3Z2ZkFnV1NJWndkSGlOeVdhQWd3ekxQbVBDUHN2QmRSM3hybGNEZy85QmQzRDA9PC9kczpYNTA5Q2VydGlmaWNhdGU+PC9kczpYNTA5RGF0YT48L2RzOktleUluZm8+PC9kczpTaWduYXR1cmU+PHNhbWxwOlN0YXR1cz48c2FtbHA6U3RhdHVzQ29kZSBWYWx1ZT0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOnN0YXR1czpTdWNjZXNzIi8+PC9zYW1scDpTdGF0dXM+PHNhbWw6QXNzZXJ0aW9uIHhtbG5zOnhzaT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEtaW5zdGFuY2UiIHhtbG5zOnhzPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hNTFNjaGVtYSIgSUQ9Il83ZjM1NTM0ODczMDI5M2M4YjgxOGJkZjc5NGNjODZhMmFjM2ZkYWIxYTUiIFZlcnNpb249IjIuMCIgSXNzdWVJbnN0YW50PSIyMDE3LTEwLTA3VDIxOjQ4OjAwWiI+PHNhbWw6SXNzdWVyIEZvcm1hdD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOm5hbWVpZC1mb3JtYXQ6ZW50aXR5Ij5pZGVudGl0eS5zaWVsdGVjbG91ZC5pdDwvc2FtbDpJc3N1ZXI+PGRzOlNpZ25hdHVyZSB4bWxuczpkcz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC8wOS94bWxkc2lnIyI+CiAgPGRzOlNpZ25lZEluZm8+PGRzOkNhbm9uaWNhbGl6YXRpb25NZXRob2QgQWxnb3JpdGhtPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzEwL3htbC1leGMtYzE0biMiLz4KICAgIDxkczpTaWduYXR1cmVNZXRob2QgQWxnb3JpdGhtPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNyc2Etc2hhMjU2Ii8+CiAgPGRzOlJlZmVyZW5jZSBVUkk9IiNfN2YzNTUzNDg3MzAyOTNjOGI4MThiZGY3OTRjYzg2YTJhYzNmZGFiMWE1Ij48ZHM6VHJhbnNmb3Jtcz48ZHM6VHJhbnNmb3JtIEFsZ29yaXRobT0iaHR0cDovL3d3dy53My5vcmcvMjAwMC8wOS94bWxkc2lnI2VudmVsb3BlZC1zaWduYXR1cmUiLz48ZHM6VHJhbnNmb3JtIEFsZ29yaXRobT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS8xMC94bWwtZXhjLWMxNG4jIi8+PC9kczpUcmFuc2Zvcm1zPjxkczpEaWdlc3RNZXRob2QgQWxnb3JpdGhtPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGVuYyNzaGEyNTYiLz48ZHM6RGlnZXN0VmFsdWU+RDQxZGlmS2REcFdqaVo4aEpiVUJWTmw3d0JROE14L2w0U0tjZlNwOWVHaz08L2RzOkRpZ2VzdFZhbHVlPjwvZHM6UmVmZXJlbmNlPjwvZHM6U2lnbmVkSW5mbz48ZHM6U2lnbmF0dXJlVmFsdWU+aXJPUTJxYTRQR1lnOVBTcy9WTERFTGFieG5oblRNTXMrVlh2Qml1eWdkUnY4WUlhRGU5OUR5YXhpanN1aERKbWVQWFp2SmxObGdwcDNrbm1HSm9wbUUxbXVyRjc4cjFLRjF0eEt6WWNIdTkyYkM4SFROS2k3OEtQSmEwaG1mWk9SRmZWME01UjdHc1RNc1V5UjJ6ZDRjR0Z5VXEvOXNwTWFaY3JEZXR1bjlxNU9iczVXNXRmM3htYWJ2c0VoNjFrQUIyOG4vU3RaeWRjK3E4a0d0ditSUDRYN2tEVllCMGlyMlB6NHFvYXlOaFdvWi9BV3RkaHgydTh6RnhCQXdVTkZBcFZDaGRTQU1pOUhRMEhJa1N1Y0RJd1lnSGVqVmxOdzhTOWd2aE92Zis0clY5bkRORlJVb294TFRGZktxVzRrSks1U0tDVzdUOVF0MzdQUWJnRVlBPT08L2RzOlNpZ25hdHVyZVZhbHVlPgo8ZHM6S2V5SW5mbz48ZHM6WDUwOURhdGE+PGRzOlg1MDlDZXJ0aWZpY2F0ZT5NSUlEY3pDQ0FsdWdBd0lCQWdJSkFNc1gwaUVLUU02eE1BMEdDU3FHU0liM0RRRUJDd1VBTUZBeEN6QUpCZ05WQkFZVEFrbFVNUTR3REFZRFZRUUlEQVZKZEdGc2VURWdNQjRHQTFVRUJ3d1hVMkZ1SUVkeVpXZHZjbWx2SUdScElFTmhkR0Z1YVdFeER6QU5CZ05WQkFvTUJsTnBaV3gwWlRBZUZ3MHhOVEV5TVRRd09ERTBNVFZhRncweU5URXlNVE13T0RFME1UVmFNRkF4Q3pBSkJnTlZCQVlUQWtsVU1RNHdEQVlEVlFRSURBVkpkR0ZzZVRFZ01CNEdBMVVFQnd3WFUyRnVJRWR5WldkdmNtbHZJR1JwSUVOaGRHRnVhV0V4RHpBTkJnTlZCQW9NQmxOcFpXeDBaVENDQVNJd0RRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFOSVJsT2pNL3RTOVY5allqSnJlcVpTY3R1WXJpTGZQVERnWDJYZGhXRWJNcE1wd0E5cDBic2JMUW9DMWdQMHBpTE8rcWJDc0loOStib1BmYjQvZExJQTdFK1ZtbTUvK2V2T3R6dmpmSEc0b1hqWks2am8wOFF3a1ZWOEJtMWprYWtKUFZaNTdRRmJ5RFNyK3VCYklNWTdDakEyTGRnbklJd0tOL2tTZkZoclpVTUo2Wnh3ZWdNMTAwWDVwc2ZOUFNWOVdVdGdIc3ZxbElsdnlkUG8yck1tMjFzZysyZDNWdGc4RHRoTlNZUkxxZ2F6Q2MwTlRzaWdySDduaVNiSkNPMG5xL3N2TVgyclNGZGg1R0ZLNy9weFQrYzNPRldxSVI4citSWDRxVythdUpxa2JUdU5Sd3hWMjJTbTZyNjlaSndWMFdzcHZzVkppK0ZZcWl5b1doZ1VDQXdFQUFhTlFNRTR3SFFZRFZSME9CQllFRkNVeDA2M0d3VWhFRkRsbHdDQmUvK2pkZVcrWE1COEdBMVVkSXdRWU1CYUFGQ1V4MDYzR3dVaEVGRGxsd0NCZS8ramRlVytYTUF3R0ExVWRFd1FGTUFNQkFmOHdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBREY5NGMzSnd5Qk04NlFCTGVvVVp4UllLUG5pYmE4QjM5RmZKazBwYitMZWpLZlpNdnNwT3JPRmdZUVE5VXJTOElGa0JYOVhyNy90alJicjJjUHdaTmpyRVpob3ErTmZjRTA5Ym5hV1R5RWwxSUVLSzhUV091cEpqOVVOVnBZWFgwTGZJUnJNd05FekFQUXlrT2FxUE9ueUh4T0NQVFk5NTd4WFNvM2pYT3l2dWd0dlBIYmQraWxpQXpVb1BtMXRnaVRLV1MrRWtRL2UyMmVGdjVORXlUK29IaUtvdnJRK3ZvUFdPSXZKVk1qaVR5eFJpYzhmRW5JOXp6VjBTeFd2RnZ0eTc3d2djWWJlRXVGWmEzaWlkaG9qVWdlOG8xdVkvSlV5UWpGeGN2dmZBZ1dTSVp3ZEhpTnlXYUFnd3pMUG1QQ1BzdkJkUjN4cmxjRGcvOUJkM0QwPTwvZHM6WDUwOUNlcnRpZmljYXRlPjwvZHM6WDUwOURhdGE+PC9kczpLZXlJbmZvPjwvZHM6U2lnbmF0dXJlPjxzYW1sOlN1YmplY3Q+PHNhbWw6TmFtZUlEIE5hbWVRdWFsaWZpZXI9Imh0dHBzOi8vc3BpZC4xOGFwcC5pdGFsaWEuaXQiIEZvcm1hdD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOm5hbWVpZC1mb3JtYXQ6dHJhbnNpZW50Ij5fOGNjY2E2MzM1ZGVjZDYwMGI2YWJjMzU0OTY2MzZmZDhmOTZiMjU5YWI2PC9zYW1sOk5hbWVJRD48c2FtbDpTdWJqZWN0Q29uZmlybWF0aW9uIE1ldGhvZD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOmNtOmJlYXJlciI+PHNhbWw6U3ViamVjdENvbmZpcm1hdGlvbkRhdGEgTm90T25PckFmdGVyPSIyMDE3LTEwLTA3VDIxOjUzOjAwWiIgUmVjaXBpZW50PSJodHRwczovL3Nzby4xOGFwcC5pdGFsaWEuaXQvc3AvQXNzZXJ0aW9uQ29uc3VtZXJTZXJ2aWNlIiBJblJlc3BvbnNlVG89IklEYTU2MjYxNGItMzFiMS00YjNmLTk1ZWEtMjMwODM2MmM4YzZmIi8+PC9zYW1sOlN1YmplY3RDb25maXJtYXRpb24+PC9zYW1sOlN1YmplY3Q+PHNhbWw6Q29uZGl0aW9ucyBOb3RCZWZvcmU9IjIwMTctMTAtMDdUMjE6NDc6MzBaIiBOb3RPbk9yQWZ0ZXI9IjIwMTctMTAtMDdUMjE6NTM6MDBaIj48c2FtbDpBdWRpZW5jZVJlc3RyaWN0aW9uPjxzYW1sOkF1ZGllbmNlPmh0dHBzOi8vc3BpZC4xOGFwcC5pdGFsaWEuaXQ8L3NhbWw6QXVkaWVuY2U+PC9zYW1sOkF1ZGllbmNlUmVzdHJpY3Rpb24+PC9zYW1sOkNvbmRpdGlvbnM+PHNhbWw6QXV0aG5TdGF0ZW1lbnQgQXV0aG5JbnN0YW50PSIyMDE3LTEwLTA3VDIxOjQ4OjAwWiIgU2Vzc2lvbkluZGV4PSJfMDEyYjBhMWI1YWQ3NDA2YjYwM2ZlOTE2NDI0YzhkNjI5YjA5NDcwOTRkIj48c2FtbDpBdXRobkNvbnRleHQ+PHNhbWw6QXV0aG5Db250ZXh0Q2xhc3NSZWY+dXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOmFjOmNsYXNzZXM6U3BpZEwyPC9zYW1sOkF1dGhuQ29udGV4dENsYXNzUmVmPjwvc2FtbDpBdXRobkNvbnRleHQ+PC9zYW1sOkF1dGhuU3RhdGVtZW50PjxzYW1sOkF0dHJpYnV0ZVN0YXRlbWVudD48c2FtbDpBdHRyaWJ1dGUgTmFtZT0iZmlzY2FsTnVtYmVyIiBOYW1lRm9ybWF0PSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YXR0cm5hbWUtZm9ybWF0OmJhc2ljIj48c2FtbDpBdHRyaWJ1dGVWYWx1ZSB4bWxuczp4c2k9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hLWluc3RhbmNlIiB4bWxuczp4cz0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEiIHhzaTp0eXBlPSJ4czpzdHJpbmciPlRJTklULVJTTk1SVDc5RDE0RTA1OEI8L3NhbWw6QXR0cmlidXRlVmFsdWU+PC9zYW1sOkF0dHJpYnV0ZT48c2FtbDpBdHRyaWJ1dGUgTmFtZT0ibmFtZSIgTmFtZUZvcm1hdD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOmF0dHJuYW1lLWZvcm1hdDpiYXNpYyI+PHNhbWw6QXR0cmlidXRlVmFsdWUgeG1sbnM6eHNpPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hNTFNjaGVtYS1pbnN0YW5jZSIgeG1sbnM6eHM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hIiB4c2k6dHlwZT0ieHM6c3RyaW5nIj5VbWJlcnRvPC9zYW1sOkF0dHJpYnV0ZVZhbHVlPjwvc2FtbDpBdHRyaWJ1dGU+PHNhbWw6QXR0cmlidXRlIE5hbWU9ImZhbWlseU5hbWUiIE5hbWVGb3JtYXQ9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDphdHRybmFtZS1mb3JtYXQ6YmFzaWMiPjxzYW1sOkF0dHJpYnV0ZVZhbHVlIHhtbG5zOnhzaT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEtaW5zdGFuY2UiIHhtbG5zOnhzPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hNTFNjaGVtYSIgeHNpOnR5cGU9InhzOnN0cmluZyI+Um9zaW5pPC9zYW1sOkF0dHJpYnV0ZVZhbHVlPjwvc2FtbDpBdHRyaWJ1dGU+PHNhbWw6QXR0cmlidXRlIE5hbWU9InBsYWNlT2ZCaXJ0aCIgTmFtZUZvcm1hdD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOmF0dHJuYW1lLWZvcm1hdDpiYXNpYyI+PHNhbWw6QXR0cmlidXRlVmFsdWUgeG1sbnM6eHNpPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hNTFNjaGVtYS1pbnN0YW5jZSIgeG1sbnM6eHM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hIiB4c2k6dHlwZT0ieHM6c3RyaW5nIj5FMDU4PC9zYW1sOkF0dHJpYnV0ZVZhbHVlPjwvc2FtbDpBdHRyaWJ1dGU+PHNhbWw6QXR0cmlidXRlIE5hbWU9ImRhdGVPZkJpcnRoIiBOYW1lRm9ybWF0PSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YXR0cm5hbWUtZm9ybWF0OmJhc2ljIj48c2FtbDpBdHRyaWJ1dGVWYWx1ZSB4bWxuczp4c2k9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hLWluc3RhbmNlIiB4bWxuczp4cz0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEiIHhzaTp0eXBlPSJ4czpkYXRlIj4xOTc5LTA0LTE0PC9zYW1sOkF0dHJpYnV0ZVZhbHVlPjwvc2FtbDpBdHRyaWJ1dGU+PHNhbWw6QXR0cmlidXRlIE5hbWU9Im1vYmlsZVBob25lIiBOYW1lRm9ybWF0PSJ1cm46b2FzaXM6bmFtZXM6dGM6U0FNTDoyLjA6YXR0cm5hbWUtZm9ybWF0OmJhc2ljIj48c2FtbDpBdHRyaWJ1dGVWYWx1ZSB4bWxuczp4c2k9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hLWluc3RhbmNlIiB4bWxuczp4cz0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEiIHhzaTp0eXBlPSJ4czpzdHJpbmciPjMyOTIzNDM0MDM8L3NhbWw6QXR0cmlidXRlVmFsdWU+PC9zYW1sOkF0dHJpYnV0ZT48c2FtbDpBdHRyaWJ1dGUgTmFtZT0iZW1haWwiIE5hbWVGb3JtYXQ9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDphdHRybmFtZS1mb3JtYXQ6YmFzaWMiPjxzYW1sOkF0dHJpYnV0ZVZhbHVlIHhtbG5zOnhzaT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEtaW5zdGFuY2UiIHhtbG5zOnhzPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hNTFNjaGVtYSIgeHNpOnR5cGU9InhzOnN0cmluZyI+bWFpbEB1bWJyb3MuaXQ8L3NhbWw6QXR0cmlidXRlVmFsdWU+PC9zYW1sOkF0dHJpYnV0ZT48c2FtbDpBdHRyaWJ1dGUgTmFtZT0iYWRkcmVzcyIgTmFtZUZvcm1hdD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOmF0dHJuYW1lLWZvcm1hdDpiYXNpYyI+PHNhbWw6QXR0cmlidXRlVmFsdWUgeG1sbnM6eHNpPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hNTFNjaGVtYS1pbnN0YW5jZSIgeG1sbnM6eHM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hIiB4c2k6dHlwZT0ieHM6c3RyaW5nIj52aWEgUGFibG8gTmVydWRhIDE0IDY0MDIzIEY3NjQgVEU8L3NhbWw6QXR0cmlidXRlVmFsdWU+PC9zYW1sOkF0dHJpYnV0ZT48c2FtbDpBdHRyaWJ1dGUgTmFtZT0iZGlnaXRhbEFkZHJlc3MiIE5hbWVGb3JtYXQ9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDphdHRybmFtZS1mb3JtYXQ6YmFzaWMiPjxzYW1sOkF0dHJpYnV0ZVZhbHVlIHhtbG5zOnhzaT0iaHR0cDovL3d3dy53My5vcmcvMjAwMS9YTUxTY2hlbWEtaW5zdGFuY2UiIHhtbG5zOnhzPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hNTFNjaGVtYSIgeHNpOnR5cGU9InhzOnN0cmluZyI+dW1iZXJ0by5yb3NpbmlAcGVjLml0PC9zYW1sOkF0dHJpYnV0ZVZhbHVlPjwvc2FtbDpBdHRyaWJ1dGU+PC9zYW1sOkF0dHJpYnV0ZVN0YXRlbWVudD48L3NhbWw6QXNzZXJ0aW9uPjwvc2FtbHA6UmVzcG9uc2U+',
+
+    describe('Response', () => {
+        it('should parse login response', function() {
+            const req = createResponse(SAMLResponseBody);
+
+            return SPID.parseResponse(req, 'spid-test', 'post');
+        });
+
+        it('should throw for a non-valid login response', function() {
+            const req = createResponse({
+                SAMLResponse: 'Robba',
                 RealyState: 54,
-            },
-            octectString: '',
-        };
+            });
 
-        return await SPID.parseResponse(req, 'spid-test', 'post');
+            return SPID.parseResponse(req, 'spid-test', 'post').then(
+                () => {
+                    throw new Error('It should not passthrough!');
+                },
+                error => {
+                    expect(error).to.be.eql(
+                        'this is not a valid saml response with errors'
+                    );
+                }
+            );
+        });
+
+        it('should throw for a non-registered Identity Provider login response', function() {
+            const req = createResponse({
+                SAMLResponse: 'Robba',
+                RealyState: 54,
+            });
+
+            return SPID.parseResponse(req, 'unknown-spid', 'post').then(
+                () => {
+                    throw new Error('It should not passthrough!');
+                },
+                error => {
+                    expect(error).to.be.eql(
+                        'Missing Identity Provider with key: unknown-spid'
+                    );
+                }
+            );
+        });
+
+        it('should throw for a non-valid method for login response', function() {
+            const req = createResponse({
+                SAMLResponse: 'Robba',
+                RealyState: 54,
+            });
+
+            return SPID.parseResponse(req, 'spid-test', 'soap').then(
+                () => {
+                    throw new Error('It should not passthrough!');
+                },
+                error => {
+                    expect(error).to.be.an('error');
+                }
+            );
+        });
     });
 });
